@@ -1,6 +1,9 @@
 var express = require('express');
 var router = express.Router();
-
+var mongoose = require('mongoose');
+const fq = require('fuzzquire')
+const accounts = fq('models/accounts')
+const login = fq("login.js")
 var globalChats = [{
   name: "Akul Singhal",
   messages: [
@@ -110,8 +113,8 @@ var globalChats = [{
 
 
 router.use(function (req, res, next) {
-  console.log("Timed out")
-  setTimeout(next, 2000);
+  console.log("Waiting 0.5 seconds before response.")
+  setTimeout(next, 500);
 })
 
 /* GET home page. */
@@ -133,6 +136,8 @@ router.get("/my-chats", function (req, res) {
   res.json(globalChats)
 })
 
+
+router.use("/login",login)
 
 router.post("/login", function (req, res, next) {
   req.session.account = {

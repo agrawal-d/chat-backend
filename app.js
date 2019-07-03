@@ -7,6 +7,7 @@ var session = require('express-session')
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var cors = require('cors');
+var mongoose = require('mongoose');
 var app = express();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -17,6 +18,9 @@ app.use(session({
   saveUninitialized: true,
   cookie: { secure: false }
 }))
+
+mongoose.connect('mongodb+srv://root:divyanshu@hereisdx-khs4b.mongodb.net/chatapp?retryWrites=true&w=majority', { useNewUrlParser: true });
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
