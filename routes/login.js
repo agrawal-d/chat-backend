@@ -20,11 +20,11 @@ router.post("/", function (req, res) {
         .digest('hex');
 
     if (req.body.newAccount) {
-        Account.find({
+        Account.findOne({
             name: req.body.name,
         }, function (err, accounts) {
             if (!senderror(err, res)) {
-                if (accounts.length > 0) {
+                if (accounts) {
                     res.json({
                         error: "Please choose a different name, the one you chose exists."
                     })
@@ -39,6 +39,7 @@ router.post("/", function (req, res) {
                                 name: account.name,
                                 id: account._id,
                             };
+                            console.log("Session started")
                             res.json({
                                 login: true,
                                 newAccount: true,
@@ -51,7 +52,7 @@ router.post("/", function (req, res) {
 
         })
     } else {
-        Account.find({
+        Account.findOne({
             name: req.body.name,
             password: passwordHash
         }, function (err, account) {
@@ -71,10 +72,11 @@ router.post("/", function (req, res) {
                     name: account.name,
                     id: account._id,
                 };
+                console.log("Session started lower")
                 res.json({
                     login: true,
                     newAccount: false,
-                    name:account.name
+                    name: account.name
                 })
             }
         })
