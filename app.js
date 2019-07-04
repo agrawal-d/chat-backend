@@ -7,6 +7,7 @@ var session = require('express-session')
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var cors = require('cors');
+const config = require('./config')
 var mongoose = require('mongoose');
 var app = express();
 // view engine setup
@@ -19,14 +20,14 @@ app.use(session({
   cookie: { secure: false }
 }))
 
-mongoose.connect('mongodb+srv://root:divyanshu@hereisdx-khs4b.mongodb.net/chatapp?retryWrites=true&w=majority', { useNewUrlParser: true });
+mongoose.connect(config.mongoString, { useNewUrlParser: true });
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cors({
-  origin: "http://localhost:3001",
+  origin: config.allowedOrigins,
   credentials: true
 }));
 app.use(express.static(path.join(__dirname, 'public')));

@@ -45,7 +45,7 @@ router.get("/", function (req, res) {
                         chatId: element.id
                     }).sort({
                         date: 1
-                    }).limit(20);
+                    }).limit(100);
                     var promise = query.exec()
                     console.log("Promise is : ", promise)
                     assert.ok(promise instanceof Promise);
@@ -202,5 +202,107 @@ router.post("/search", function (req, res) {
     }
 })
 
+router.post("/refresh-chats", function (req, res) {
+    const promises = [];
+    var savedChats = [];
+    if (req.session.account && req.body.people) {
+        const query = Chats.find({
+            people: req.session.account.name
+        });
+
+        const promise0 = query.exec();
+
+        promise0.then((chats) => {
+
+            return chats
+
+        }).then((chats) => {
+            if (!chats || chats.length === 0) {
+                res.json({
+                    empty: true,
+                    reason:"No chats at all for this person."
+                })
+            } else {
+                console.log("Initial Found chats ->", chats);
+
+
+
+
+
+
+                for (element of chats) {
+                    /*
+                    Loop over backend and frontend chats and remove matches, only unique chats are required
+                    */
+                    const found = element.people.some(r => req.body.people.indexOf(r) >= 0);
+                    if (!found) {
+                        console.log(`Well, ${element.people} will be pushed`);
+                        savedChats.push(element);
+                        const findConvs = Conversations
+                            .find({
+                                chatId: element.id
+                            })
+                            .limit(100)
+                        promises.push(findConvs.exec());
+                    } else {
+                        console.log(`Oops, ${element.people} cant be pushed`);
+
+                    }
+
+
+
+
+                }
+
+
+            }
+        }).finally(() => {
+            console.log("Should be waiting for promises now ...");
+            Promise.all(promises).then(function (listOfConvs) {
+                console.log("Executing promises");
+                const convs = []
+                var count = 0;
+                console.log("Vaild chats", savedChats)
+                if (savedChats) {
+                    for (element of savedChats) {
+                        const index = (!element.people.indexOf(req.session.account.name)) ? 1 : 0;
+                        const otherPersonName = element.people[index];
+                        if (listOfConvs[count]) { // Handles the case when PEOPLE IN FRONTEND CHAT matches with FOUND CHATS.
+                            convs.push({
+                                name: otherPersonName,
+                                messages: listOfConvs[count],
+                                date: element.date
+                            })
+                        }
+
+                        count++;
+                    }
+                    if (convs.length > 0) {
+                        res.json(convs);
+
+                    } else {
+                        res.json({
+                            empty: true
+                        })
+                    }
+                    console.log("Unsaved convs", convs);
+                } else {
+                    console.log("No savedChats", savedChats);
+                }
+
+
+            })
+        }).catch((error) => {
+            console.log("/refresh-chats final promises error", error);
+        })
+
+
+    } else {
+        res.json({
+            error: "Invalid session OR invalid request"
+        })
+        return;
+    }
+})
 
 module.exports = router;
