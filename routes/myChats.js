@@ -135,7 +135,9 @@ router.post("/submit-message", function (req, res) {
 
 router.post("/search", function (req, res) {
     if (req.session.account && req.body.people && req.body.query) {
-        const people = JSON.parse(req.body.people)
+        const people = req.body.people;
+        console.log(people)
+        console.log(typeof (people))
         console.log(req.session.account.name)
         people.push(req.session.account.name)
         Account.findOne({
@@ -151,7 +153,46 @@ router.post("/search", function (req, res) {
                 )
                 console.error("Search - >", err);
             } else {
-                res.json(account);
+                if (account) {
+                    const chat = new Chats({
+                        people: [account.name, req.session.account.name],
+                        date: Date.now()
+                    });
+                    chat.save(function (err, savedChat) {
+                        if (err) {
+                            res.json({
+                                error: err
+                            })
+                        } else {
+                            const botText = new Conversations({
+                                chatId: savedChat.id,
+                                from: "Chat Bot Automoderator",
+                                message: "Welcome to chat. Please ensure you follow all the rules. Your chats are private",
+                                date: Date.now()
+                            })
+
+                            botText.save(function (err, savedBotText) {
+                                if (err) {
+                                    res.json({
+                                        error: err
+                                    })
+                                } else {
+                                    res.json({
+                                        name: account.name,
+                                        messages: [
+                                            savedBotText
+                                        ],
+                                        date: Date.now()
+                                    });
+                                }
+                            })
+                        }
+                    })
+                } else {
+                    res.json({
+                        empty: true
+                    })
+                }
             }
         })
     } else {
