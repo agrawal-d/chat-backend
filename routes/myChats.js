@@ -52,7 +52,6 @@ router.get("/", function (req, res) {
                     promises.push(promise);
                 }
 
-
                 console.log("Promises", promises);
                 Promise.all(promises).then(function (listOfConvs) {
                     // console.log(listOfConvs);
@@ -69,32 +68,95 @@ router.get("/", function (req, res) {
                         count++;
                     }
                     res.json(convs);
-                    console.log("Convs", convs)
-                    // (err, conversations) => {
-
-                    //     if (err) {
-                    //         res.json({ error: err });
-
-                    //     } else if (conversations.length == 0) {
-                    //         console.error("No conversation found with Id", element.id)
-                    //     }
-                    //     else {
-                    //         // console.log('Found a conversation', conversations);
-                    //         // console.log(element.people, req.session.account.name);
-                    //         const index = (!element.people.indexOf(req.session.account.name)) ? 1 : 0;
-                    //         // console.log("index", index)
-                    //         // console.log("ID", element.id)
-                    //         convs.push({
-                    //             name: element.people[index],
-                    //             messages: conversations
-                    //         })
-                    //         console.log(convs)
-
-                    //     }
-                    // }
                 })
             }
 
+        })
+    }
+})
+    +
+
+    router.post('/new-messages', function (req, res) {
+        if (!req.session.account) {
+            res.json({
+                error: "Login Session Expired"
+            })
+        } else {
+            const dateFilter = req.body.date;
+            const chatId = req.body.chatId;
+            const query = Conversations.find({
+                date: {
+                    $gt: dateFilter
+                },
+                chatId: chatId
+            })
+
+            query.exec(function (err, conversation) {
+                if (err) {
+                    res.json({
+                        error: err
+                    })
+                    console.log("Error att /mew-message", err);
+                } else {
+                    res.json(conversation)
+                }
+            })
+
+
+        }
+    })
+
+router.post("/submit-message", function (req, res) {
+    if (req.body.message && req.body.message.length > 0 && req.body.chatId && req.body.from && req.session.account) {
+        const conversation = new Conversations({
+            chatId: req.body.chatId,
+            message: req.body.message,
+            from: req.body.from,
+            date: Date.now()
+        })
+
+        conversation.save(function (err) {
+            if (err) {
+                res.json({
+                    error: err
+                })
+            } else {
+                res.json({
+                    success: true
+                })
+            }
+        })
+    } else {
+        res.json({
+            error: "Error, invalid parameters in req.body OR session expired."
+        })
+    }
+})
+
+router.post("/search", function (req, res) {
+    if (req.session.account && req.body.people && req.body.query) {
+        const people = JSON.parse(req.body.people)
+        console.log(req.session.account.name)
+        people.push(req.session.account.name)
+        Account.findOne({
+            $and: [
+                { name: { $nin: people } },
+                { name: req.body.query }
+            ]
+            ,
+        }, function (err, account) {
+            if (err) {
+                res.json(
+                    { errors: err }
+                )
+                console.error("Search - >", err);
+            } else {
+                res.json(account);
+            }
+        })
+    } else {
+        res.error({
+            error: "Check session or request parameters."
         })
     }
 })
