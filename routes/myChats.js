@@ -234,12 +234,12 @@ router.post("/refresh-chats", function (req, res) {
 
 
                 for (element of chats) {
-                    chatIds.push(element.id);
                     /*
                     Loop over backend and frontend chats and remove matches, only unique chats are required
                     */
                     const found = element.people.some(r => req.body.people.indexOf(r) >= 0);
                     if (!found) {
+                        chatIds.push(element.id);
                         // console.log(`Well, ${element.people} will be pushed`);
                         savedChats.push(element);
 
@@ -278,7 +278,7 @@ router.post("/refresh-chats", function (req, res) {
                                     name: otherPersonName,
                                     messages: listOfConvs[count],
                                     date: element.date,
-                                    id: chatIds[count]
+                                    id: savedChats[count]._id.toString()
                                 })
                             }
 
