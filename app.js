@@ -1,5 +1,12 @@
 var createError = require('http-errors');
 var express = require('express');
+var http = require('http');
+var io = require('socket.io');
+
+var app = express()
+  , server = require('http').createServer(app)
+  , io = io.listen(server);
+app.io = io;
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
@@ -9,7 +16,41 @@ var usersRouter = require('./routes/users');
 var cors = require('cors');
 const config = require('./config')
 var mongoose = require('mongoose');
-var app = express();
+var users = 0;
+io.on('connection', function (socket) {
+  console.log("Users (+): ", ++users);
+  socket.on("disconnect", function () {
+    console.log("Users (-): ", --users)
+  })
+
+  socket.on("join-room", function (msg) {
+    console.log("Joined  ", msg);
+    socket.join(msg)
+
+  })
+
+
+  socket.on("new-message", function (data) {
+
+
+
+    console.log("Got a new message", data);
+    socket.to(data.chatId).emit("new-message", {
+      message: data.message,
+      date: Date.now(),
+      id: Math.random(),
+      from: data.from,
+    });
+
+
+
+  })
+
+
+});
+
+
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
@@ -49,5 +90,5 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
-
+server.listen(3000);
 module.exports = app;
