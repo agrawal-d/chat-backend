@@ -48,16 +48,16 @@ router.get("/", function (req, res) {
                         date: 1
                     }).limit(100);
                     var promise = query.exec()
-                    console.log("Promise is : ", promise)
-                    assert.ok(promise instanceof Promise);
+                    // console.log("Promise is : ", promise)
+                    // assert.ok(promise instanceof Promise);
                     promises.push(promise);
                 }
 
-                console.log("Promises", promises);
+                // console.log("Promises", promises);
                 Promise.all(promises).then(function (listOfConvs) {
                     // console.log(listOfConvs);
                     const convs = []
-                    console.log(savedChats);
+                    // console  .log(savedChats);
                     var count = 0;
                     for (element of savedChats) {
                         const index = (!element.people.indexOf(req.session.account.name)) ? 1 : 0;

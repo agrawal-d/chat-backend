@@ -35,24 +35,57 @@ const Conversations = fq("models/conversations");
  * 
 */
 
+const onlinePeople = [];
+
 io.on('connection', function (socket) {
 
-  console.log("Users (+): ", ++users);
-  socket.on("disconnect", function () {
-    console.log("Users (-): ", --users)
+  if (socket.handshake.session.account) {
+    if (!onlinePeople.includes(socket.handshake.session.account.name)) {
+      onlinePeople.push(socket.handshake.session.account.name);
+      socket.userName = socket.handshake.session.account.name
+      console.log("Online : ", onlinePeople);
+      io.to(socket.userName).emit("update-status", "online");
+      console.log("Told everyone that", socket.userName, "is online");
+    }
+  }
+
+  socket.on("disconnect", () => {
+    const index = onlinePeople.indexOf(socket.userName);
+    onlinePeople.splice(index, 1);
+    console.log("Online : ", onlinePeople);
+    io.to(socket.userName).emit("update-status", "offline");
+    console.log("Told everyone that", socket.userName, "is offline");
   })
 
-  socket.on("join-room", function (chatId) {
-    console.log(socket.id, " is joining room", chatId)
-    socket.join(chatId);
+  socket.on("join-room", (name) => {
+    console.log(socket.id, " is joining room", name)
+    socket.join(name);
+    socket.to(name).emit("update-status", "online");
   })
 
-  socket.on("leave-room", function (chatId) {
-    console.log(socket.id, " is leaving room", chatId)
-    socket.leave(chatId);
+  socket.on("leave-room", (name) => {
+    console.log(socket.id, " is leaving room", name)
+    socket.leave(name);
+    // socket.to(chatId).emit("update-status", "offline");
+    socket.handshake.session.chatId = null;
+
+
+
+
   })
 
-  socket.on("new-message", function (data) {
+  socket.on("get-status", (username) => {
+    console.log("Request was made for status  for", username, onlinePeople)
+    if (onlinePeople.includes(username)) {
+      io.to(username).emit("update-status", "online");
+      console.log(" is online")
+    } else {
+      io.to(username).emit("update-status", "offline")
+    }
+    console.log("Request status was sent to rooms", username);
+  })
+
+  socket.on("new-message", (data) => {
     console.log("Got a message : ", data);
     var newText = new Conversations({
       from: data.from,
@@ -67,14 +100,11 @@ io.on('connection', function (socket) {
         io.to(data.chatId).emit("new-message", savedText);
       }
     })
-
   })
-
 
 });
 
 app.io = io;
-// view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 mongoose.connect(config.mongoString, { useNewUrlParser: true });
